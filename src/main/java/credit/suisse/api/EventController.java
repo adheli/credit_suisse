@@ -47,7 +47,7 @@ public class EventController {
 
     private boolean saveResults(List<EventResult> results) {
         for (EventResult result : results) {
-            service.save(result);
+//            service.save(result);
         }
 
         return true;
