@@ -1,38 +1,59 @@
 package credit.suisse.api;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import credit.suisse.dao.EventResultService;
-import credit.suisse.pojo.Event;
-import credit.suisse.pojo.EventResult;
-
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import credit.suisse.dao.EventResultService;
+import credit.suisse.pojo.Event;
+import credit.suisse.pojo.EventResult;
+
+/**
+ * 
+ * @author adheli.tavares
+ *
+ */
 public class EventController {
 
+    private static final Logger logger = Logger.getGlobal();
     private EventResultService service = new EventResultService();
 
+    /**
+     * Read json file and serializes the data to a list of events.
+     * @param inputFilePath
+     * @return Event list
+     */
     private List<Event> getEventsFromJsonFile(String inputFilePath) {
+    	List<Event> events = new ArrayList<Event>();
         try {
+        	EventController.logger.info(String.format("Reading input file %s to get json data.", inputFilePath));
             String jsonString = new String(Files.readAllBytes(Paths.get(inputFilePath)));
 
             Gson gson = new Gson();
 
             Type listType = new TypeToken<ArrayList<Event>>(){}.getType();
-            return gson.fromJson(jsonString, listType);
-        } catch (IOException e) {
-            return null;
+            events = gson.fromJson(jsonString, listType);
+        } catch (IOException ioExcp) {
+        	EventController.logger.severe(String.format("Error while trying to read input file %s.", inputFilePath));
         }
+        
+        return events;
     }
 
+    /**
+     * Prepare a list for unique id's.
+     * @param events
+     * @return 
+     */
     private List<String> getIds(List<Event> events) {
         List<String> ids = new ArrayList<String>();
 
@@ -44,21 +65,40 @@ public class EventController {
 
         return ids;
     }
+    
+    /**
+     * 
+     * @param id
+     * @param started
+     * @param finished
+     * @return
+     */
+    private EventResult prepareResult(String id, Event started, Event finished) {
+    	Long duration = finished.getTimestamp() - started.getTimestamp();
 
-    private boolean saveResults(List<EventResult> results) {
-        for (EventResult result : results) {
-//            service.save(result);
-        }
-
-        return true;
+        EventResult result = new EventResult(id, duration.intValue(), (duration > 4));
+        result.setHost(started.getHost() != null ? started.getHost() : finished.getHost());
+        result.setType(started.getType() != null ? started.getType() : finished.getType());
+        
+        return result;
+    }
+    
+    private void saveResults(List<EventResult> results) {
+    	results.forEach(result -> this.service.saveEventResult(result));
     }
 
+    /**
+     * 
+     * @param inputFilePath
+     */
     public void processEvents(String inputFilePath) {
         List<Event> events = this.getEventsFromJsonFile(inputFilePath);
 
-        if (events != null && !events.isEmpty()) {
+        if (!events.isEmpty()) {
+        	EventController.logger.info("Starting to process events.");
+        	
             List<String> ids = this.getIds(events);
-
+            
             List<EventResult> results = new ArrayList<EventResult>();
 
             for (String id : ids) {
@@ -67,22 +107,19 @@ public class EventController {
                 Optional<Event> finished = eventsForId.stream().filter(event -> event.getState().equals("FINISHED")).findFirst();
 
                 if (finished.isPresent() && started.isPresent()) {
-                    Long duration = finished.get().getTimestamp() - started.get().getTimestamp();
-
-                    EventResult result = new EventResult(id, duration.intValue(), (duration > 4));
-                    result.setHost(started.get().getHost() != null ? started.get().getHost() : finished.get().getHost());
-                    result.setType(started.get().getType() != null ? started.get().getType() : finished.get().getType());
-                    results.add(result);
+                	EventResult result = prepareResult(id, started.get(), finished.get());
+                	EventController.logger.info(String.format("Event %s processed.", result.getId()));
+                	
+                	results.add(result);
                 }
             }
-
+            
             this.saveResults(results);
         }
     }
-
-    public static void main(String[] args) {
-        EventController controller = new EventController();
-
-        controller.processEvents("/home/vagrant/IdeaProjects/credit_suisse/src/test/resources/input_file.json");
+    
+    public List<EventResult> getEventResults() {
+    	return this.service.listAllEvents();
     }
+
 }
