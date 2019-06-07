@@ -4,10 +4,31 @@ import credit.suisse.api.EventController;
 
 public class Application {
 	
-	EventController controller = new EventController();
+	private EventController controller = new EventController();
 	
-	public EventController getController() {
+	private EventController getController() {
 		return controller;
+	}
+
+	public static void main(String[] args) {
+		Application app = new Application();
+
+		String argument = args[0];
+
+		switch (argument) {
+			case "create_table":
+				app.getController().prepareTable();
+				break;
+			case "results":
+				app.getController().getEventResults();
+				break;
+			case "clean_data":
+				app.getController().cleanData();
+				break;
+			default:
+				app.getController().processEvents(argument);
+				break;
+		}
 	}
 
 }

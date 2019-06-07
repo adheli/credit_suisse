@@ -81,6 +81,8 @@ local.properties
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/vcs.xml
+.idea/misc.xml
 
 # Generated files
 .idea/**/contentModel.xml
@@ -195,3 +197,8 @@ gradle-app.setting
 **/build/
 
 # End of https://www.gitignore.io/api/java,gradle,eclipse,intellij
+
+# Project data
+eventsdb.lck
+eventsdb.log
+/.idea/

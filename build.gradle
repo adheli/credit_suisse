@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 plugins {
     id 'java'
 }
@@ -21,4 +23,13 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+task fatJar(type: Jar) {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    manifest {
+        attributes 'Main-Class': 'credit.suisse.app.Application'
+        attributes 'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date())
+    }
 }

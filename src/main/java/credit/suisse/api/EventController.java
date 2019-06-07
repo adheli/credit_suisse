@@ -18,9 +18,7 @@ import credit.suisse.pojo.Event;
 import credit.suisse.pojo.EventResult;
 
 /**
- * 
  * @author adheli.tavares
- *
  */
 public class EventController {
 
@@ -29,30 +27,33 @@ public class EventController {
 
     /**
      * Read json file and serializes the data to a list of events.
-     * @param inputFilePath
+     *
+     * @param inputFilePath: file to be read and get event logs.
      * @return Event list
      */
     private List<Event> getEventsFromJsonFile(String inputFilePath) {
-    	List<Event> events = new ArrayList<Event>();
+        List<Event> events = new ArrayList<Event>();
         try {
-        	EventController.logger.info(String.format("Reading input file %s to get json data.", inputFilePath));
+            EventController.logger.info(String.format("Reading input file %s to get json data.", inputFilePath));
             String jsonString = new String(Files.readAllBytes(Paths.get(inputFilePath)));
 
             Gson gson = new Gson();
 
-            Type listType = new TypeToken<ArrayList<Event>>(){}.getType();
+            Type listType = new TypeToken<ArrayList<Event>>() {
+            }.getType();
             events = gson.fromJson(jsonString, listType);
         } catch (IOException ioExcp) {
-        	EventController.logger.severe(String.format("Error while trying to read input file %s.", inputFilePath));
+            EventController.logger.severe(String.format("Error while trying to read input file %s.", inputFilePath));
         }
-        
+
         return events;
     }
 
     /**
      * Prepare a list for unique id's.
-     * @param events
-     * @return 
+     *
+     * @param events: processed log events from json file.
+     * @return list of unique log events id.
      */
     private List<String> getIds(List<Event> events) {
         List<String> ids = new ArrayList<String>();
@@ -65,40 +66,44 @@ public class EventController {
 
         return ids;
     }
-    
+
     /**
-     * 
-     * @param id
-     * @param started
-     * @param finished
-     * @return
+     * Get start and finish log events, caluculate timestamp difference and prepare the result.
+     *
+     * @param id:       log event id.
+     * @param started:  start event log entry
+     * @param finished: finish event log entry.
+     * @return log event result.
      */
     private EventResult prepareResult(String id, Event started, Event finished) {
-    	Long duration = finished.getTimestamp() - started.getTimestamp();
+        Long duration = finished.getTimestamp() - started.getTimestamp();
 
         EventResult result = new EventResult(id, duration.intValue(), (duration > 4));
         result.setHost(started.getHost() != null ? started.getHost() : finished.getHost());
         result.setType(started.getType() != null ? started.getType() : finished.getType());
-        
+
         return result;
     }
-    
+
     private void saveResults(List<EventResult> results) {
-    	results.forEach(result -> this.service.saveEventResult(result));
+        results.forEach(result -> {
+            this.service.saveEventResult(result);
+        });
     }
 
     /**
-     * 
-     * @param inputFilePath
+     * Read json file with log event entries and process them to get duration of events, then save the result on database.
+     *
+     * @param inputFilePath: json file with log entries to be processed.
      */
     public void processEvents(String inputFilePath) {
         List<Event> events = this.getEventsFromJsonFile(inputFilePath);
 
         if (!events.isEmpty()) {
-        	EventController.logger.info("Starting to process events.");
-        	
+            EventController.logger.info("Starting to process events.");
+
             List<String> ids = this.getIds(events);
-            
+
             List<EventResult> results = new ArrayList<EventResult>();
 
             for (String id : ids) {
@@ -107,19 +112,26 @@ public class EventController {
                 Optional<Event> finished = eventsForId.stream().filter(event -> event.getState().equals("FINISHED")).findFirst();
 
                 if (finished.isPresent() && started.isPresent()) {
-                	EventResult result = prepareResult(id, started.get(), finished.get());
-                	EventController.logger.info(String.format("Event %s processed.", result.getId()));
-                	
-                	results.add(result);
+                    EventResult result = prepareResult(id, started.get(), finished.get());
+                    results.add(result);
+                    EventController.logger.info(String.format("Event %s processed.", result.getId()));
+
                 }
             }
-            
+
             this.saveResults(results);
         }
     }
-    
-    public List<EventResult> getEventResults() {
-    	return this.service.listAllEvents();
+
+    public void getEventResults() {
+        this.service.listAllEvents().forEach(System.out::println);
     }
 
+    public void prepareTable() {
+        this.service.createTable();
+    }
+
+    public void cleanData() {
+        this.service.cleanTable();
+    }
 }
