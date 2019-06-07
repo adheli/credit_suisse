@@ -18,10 +18,10 @@ import credit.suisse.pojo.EventResult;
 
 class TestEventController {
 
-	EventController controller = new EventController();
-	EventResultService service = new EventResultService();
-	ClassLoader classLoader = getClass().getClassLoader();
-	String inputFile = "";
+	private EventController controller = new EventController();
+	private EventResultService service = new EventResultService();
+	private ClassLoader classLoader = getClass().getClassLoader();
+	private String inputFile = "";
 
 	/**
 	 * Remove all the data from table.

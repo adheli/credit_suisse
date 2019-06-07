@@ -123,8 +123,8 @@ public class EventController {
         }
     }
 
-    public void getEventResults() {
-        this.service.listAllEvents().forEach(System.out::println);
+    public List<EventResult> getEventResults() {
+        return this.service.listAllEvents();
     }
 
     public void prepareTable() {

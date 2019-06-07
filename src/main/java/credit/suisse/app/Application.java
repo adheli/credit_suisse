@@ -20,7 +20,7 @@ public class Application {
 				app.getController().prepareTable();
 				break;
 			case "results":
-				app.getController().getEventResults();
+				app.getController().getEventResults().forEach(System.out::println);
 				break;
 			case "clean_data":
 				app.getController().cleanData();
