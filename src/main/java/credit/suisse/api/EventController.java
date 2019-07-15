@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import credit.suisse.dao.EventResultService;
+import credit.suisse.dao.impl.EventResultServiceImpl;
 import credit.suisse.pojo.Event;
 import credit.suisse.pojo.EventResult;
 
@@ -23,7 +24,11 @@ import credit.suisse.pojo.EventResult;
 public class EventController {
 
     private static final Logger logger = Logger.getGlobal();
-    private EventResultService service = new EventResultService();
+    private EventResultService service;
+
+    public EventController() {
+        this.service = new EventResultServiceImpl();
+    }
 
     /**
      * Read json file and serializes the data to a list of events.
@@ -32,15 +37,14 @@ public class EventController {
      * @return Event list
      */
     private List<Event> getEventsFromJsonFile(String inputFilePath) {
-        List<Event> events = new ArrayList<Event>();
+        List<Event> events = new ArrayList<>();
         try {
             EventController.logger.info(String.format("Reading input file %s to get json data.", inputFilePath));
             String jsonString = new String(Files.readAllBytes(Paths.get(inputFilePath)));
 
             Gson gson = new Gson();
 
-            Type listType = new TypeToken<ArrayList<Event>>() {
-            }.getType();
+            Type listType = new TypeToken<ArrayList<Event>>() {}.getType();
             events = gson.fromJson(jsonString, listType);
         } catch (IOException ioExcp) {
             EventController.logger.severe(String.format("Error while trying to read input file %s.", inputFilePath));
@@ -56,19 +60,17 @@ public class EventController {
      * @return list of unique log events id.
      */
     private List<String> getIds(List<Event> events) {
-        List<String> ids = new ArrayList<String>();
+        List<String> ids = new ArrayList<>();
 
         List<Event> distinct = events.stream().distinct().collect(Collectors.toList());
 
-        for (Event event : distinct) {
-            ids.add(event.getId());
-        }
+        distinct.forEach(event -> ids.add(event.getId()));
 
         return ids;
     }
 
     /**
-     * Get start and finish log events, caluculate timestamp difference and prepare the result.
+     * Get start and finish log events, calculate timestamp difference and prepare the result.
      *
      * @param id:       log event id.
      * @param started:  start event log entry
@@ -86,9 +88,7 @@ public class EventController {
     }
 
     private void saveResults(List<EventResult> results) {
-        results.forEach(result -> {
-            this.service.saveEventResult(result);
-        });
+        results.forEach(result -> this.service.saveEventResult(result));
     }
 
     /**
@@ -104,9 +104,9 @@ public class EventController {
 
             List<String> ids = this.getIds(events);
 
-            List<EventResult> results = new ArrayList<EventResult>();
+            List<EventResult> results = new ArrayList<>();
 
-            for (String id : ids) {
+            ids.forEach(id -> {
                 List<Event> eventsForId = events.stream().filter(event -> event.getId().equals(id)).collect(Collectors.toList());
                 Optional<Event> started = eventsForId.stream().filter(event -> event.getState().equals("STARTED")).findFirst();
                 Optional<Event> finished = eventsForId.stream().filter(event -> event.getState().equals("FINISHED")).findFirst();
@@ -115,9 +115,8 @@ public class EventController {
                     EventResult result = prepareResult(id, started.get(), finished.get());
                     results.add(result);
                     EventController.logger.info(String.format("Event %s processed.", result.getId()));
-
                 }
-            }
+            });
 
             this.saveResults(results);
         }

@@ -3,7 +3,7 @@ package credit.suisse.app;
 import credit.suisse.api.EventController;
 
 public class Application {
-	
+
 	private EventController controller = new EventController();
 	
 	private EventController getController() {

@@ -13,13 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import credit.suisse.api.EventController;
-import credit.suisse.dao.EventResultService;
+import credit.suisse.dao.impl.EventResultServiceImpl;
 import credit.suisse.pojo.EventResult;
 
 class TestEventController {
 
 	private EventController controller = new EventController();
-	private EventResultService service = new EventResultService();
+	private EventResultServiceImpl service = new EventResultServiceImpl();
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private String inputFile = "";
 
