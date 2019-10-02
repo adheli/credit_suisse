@@ -1,33 +1,35 @@
 package credit.suisse.test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.List;
-
+import credit.suisse.api.EventController;
+import credit.suisse.api.EventControllerImpl;
+import credit.suisse.pojo.EventResult;
+import credit.suisse.service.EventService;
+import credit.suisse.service.EventServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import credit.suisse.api.EventController;
-import credit.suisse.dao.impl.EventResultServiceImpl;
-import credit.suisse.pojo.EventResult;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class TestEventController {
 
-	private EventController controller = new EventController();
-	private EventResultServiceImpl service = new EventResultServiceImpl();
+	private EventController controller = new EventControllerImpl();
+	private EventService service = new EventServiceImpl();
 	private ClassLoader classLoader = getClass().getClassLoader();
-	private String inputFile = "";
+	private static final String inputFileSuccess = "input_file.json";
+	private static final String inputFileMissingFinishedLog = "input_file_missing_finished_log.json";
+	private static final String inputFileCheckAlert = "input_file_check_alert.json";
 
 	/**
 	 * Remove all the data from table.
 	 */
 	@BeforeEach
-	public void setUp() {
+	void setUp() {
 		service.cleanTable();
 	}
 
@@ -35,60 +37,57 @@ class TestEventController {
 	 * Remove all the data from table.
 	 */
 	@AfterEach
-	public void tearDown() {
+	void tearDown() {
 		service.cleanTable();
 	}
 
-	/**
-	 * Test method for {@link credit.suisse.api.EventController#processEvents(java.lang.String)}.
-	 */
-	@Test
-	public void testProcessEvents() {
+	private String loadResourceInputFile(String inputFilePath) {
 		try {
-			this.inputFile = Paths.get(classLoader.getResource("input_file.json").toURI()).toString();
+			return Paths.get(Objects.requireNonNull(classLoader.getResource(inputFilePath)).toURI()).toString();
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
-		controller.processEvents(this.inputFile);
+		return null;
+	}
+
+	/**
+	 * Test method for {@link EventControllerImpl#processEvents(java.lang.String)}.
+	 */
+	@Test
+	void testProcessEvents() {
+		String inputFile = loadResourceInputFile(inputFileSuccess);
+		controller.processEvents(inputFile);
 		
-		List<EventResult> results = controller.getEventResults();
+		List<EventResult> results = controller.showEventResults();
 		
 		assertSame(6, results.size());
 	}
 
 	/**
-	 * Test method for {@link credit.suisse.api.EventController#processEvents(java.lang.String)}.
+	 * Test method for {@link EventControllerImpl#processEvents(java.lang.String)}.
 	 * One of the tasks id doesn't have the FINISHED log in json data.
 	 */
 	@Test
-	public void testProcessEventsMissingFinishedLog() {
-		try {
-			this.inputFile = Paths.get(classLoader.getResource("input_file_missing_finished_log.json").toURI()).toString();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
-		controller.processEvents(this.inputFile);
+	void testProcessEventsMissingFinishedLog() {
+		String inputFile = loadResourceInputFile(inputFileMissingFinishedLog);
+		controller.processEvents(inputFile);
 		
-		List<EventResult> results = controller.getEventResults();
+		List<EventResult> results = controller.showEventResults();
 		
 		assertSame(5, results.size());
 	}
 
 	/**
-	 * Test method for {@link credit.suisse.api.EventController#processEvents(java.lang.String)}.
+	 * Test method for {@link EventControllerImpl#processEvents(java.lang.String)}.
 	 * Check if alert is true for first object (timestamp difference is 5)
 	 * Check if alert is false for second object (timestamp difference is 3)
 	 */
 	@Test
-	public void testProcessEventsCheckAlert() {
-		try {
-			this.inputFile = Paths.get(classLoader.getResource("input_file_check_alert.json").toURI()).toString();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
-		controller.processEvents(this.inputFile);
+	void testProcessEventsCheckAlert() {
+		String inputFile = loadResourceInputFile(inputFileCheckAlert);
+		controller.processEvents(inputFile);
 		
-		List<EventResult> results = controller.getEventResults();
+		List<EventResult> results = controller.showEventResults();
 		assertTrue(results.get(0).getAlert());
 		assertFalse(results.get(1).getAlert());
 		

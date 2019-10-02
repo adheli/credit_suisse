@@ -1,10 +1,11 @@
 package credit.suisse.app;
 
 import credit.suisse.api.EventController;
+import credit.suisse.api.EventControllerImpl;
 
 public class Application {
-
-	private EventController controller = new EventController();
+	
+	private EventController controller = new EventControllerImpl();
 	
 	private EventController getController() {
 		return controller;
@@ -17,13 +18,13 @@ public class Application {
 
 		switch (argument) {
 			case "create_table":
-				app.getController().prepareTable();
+				app.getController().prepareEnvironment();
 				break;
 			case "results":
-				app.getController().getEventResults().forEach(System.out::println);
+				System.out.println(app.getController().showEventResults());
 				break;
 			case "clean_data":
-				app.getController().cleanData();
+				app.getController().cleanEnvironment();
 				break;
 			default:
 				app.getController().processEvents(argument);
